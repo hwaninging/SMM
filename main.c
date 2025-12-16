@@ -1,10 +1,3 @@
-//
-//  main.c
-//  SMMarble
-//
-//  Created by Juyeop Kim on 2023/11/05.
-//
-
 #include <time.h>
 #include <string.h>
 #include "smm_object.h"
@@ -16,24 +9,24 @@
 #define FESTFILEPATH "marbleFestivalConfig.txt"
 
 
-//board configuration parameters
+//보드 구성 매개변수 
 static int board_nr;
 static int food_nr;
 static int festival_nr;
 
 
 
-//function prototypes
+//function prototypes (미리 구성하고 하나씩 짜면 되는 것) 
 #if 0
-int isGraduated(void); //check if any player is graduated
-void generatePlayers(int n, int initEnergy); //generate a new player
-void printGrades(int player); //print grade history of the player
-void goForward(int player, int step); //make player go "step" steps on the board (check if player is graduated)
-void printPlayerStatus(void); //print all player status at the beginning of each turn
-float calcAverageGrade(int player); //calculate average grade of the player
-smmGrade_e takeLecture(int player, char *lectureName, int credit); //take the lecture (insert a grade of the player)
-void* findGrade(int player, char *lectureName); //find the grade from the player's grade history
-void printGrades(int player); //print all the grade history of the player
+int isGraduated(void); //졸업한 플레이어 있는지 확인. 
+void generatePlayers(int n, int initEnergy); //새 플레이어 생성. 
+void printGrades(int player); //플레이어 성적 기록 
+void goForward(int player, int step); //플레이어가 보드에서 step단계로 이동.(플레이어 졸업했는지 확인) 
+void printPlayerStatus(void); //각 턴이 시작될 때마다 모든 플레이어 상태 출력.
+float calcAverageGrade(int player); //플레이어 평균 성적 계산. 
+smmGrade_e takeLecture(int player, char *lectureName, int credit); //강의 듣기(선수 성적 입력) 
+void* findGrade(int player, char *lectureName); //플레이어 성적 기록에서 성적 찾기 
+void printGrades(int player); //모든 성적 기록 인쇄 
 #endif
 
 
@@ -42,7 +35,7 @@ void printGrades(int player); //print all the grade history of the player
 int rolldie(int player)
 {
     char c;
-    printf(" Press any key to roll a die (press g to see grade): ");
+    printf("주사위를 굴리려면 아무 키나 눌러주세요.(등급을 보려면 g를 눌러주세요:");
     c = getchar();
     fflush(stdin);
     
@@ -55,12 +48,12 @@ int rolldie(int player)
 }
 
 #if 0
-//action code when a player stays at a node
+//플레이어가 노드에 머무르는 동작 코드 
 void actionNode(int player)
 {
     switch(type)
     {
-        //case lecture:
+        //case 강의:
         default:
             break;
     }
@@ -83,7 +76,7 @@ int main(int argc, const char * argv[]) {
     srand(time(NULL));
     
     
-    //1. import parameters ---------------------------------------------------------------------------------
+    //1. 매개변수 가져오기 ---------------------------------------------------------------------------------
     //1-1. boardConfig 
     if ((fp = fopen(BOARDFILEPATH,"r")) == NULL)
     {
@@ -95,14 +88,14 @@ int main(int argc, const char * argv[]) {
     printf("Reading board component......\n");
     while () //read a node parameter set
     {
-        //store the parameter set
+        //매개변수 set 저장 
     }
     fclose(fp);
     printf("Total number of board nodes : %i\n", board_nr);
     
     
 
-    //2. food card config 
+    //2. 음식 카드 
     if ((fp = fopen(FOODFILEPATH,"r")) == NULL)
     {
         printf("[ERROR] failed to open %s. This file should be in the same directory of SMMarble.exe.\n", FOODFILEPATH);
@@ -110,15 +103,15 @@ int main(int argc, const char * argv[]) {
     }
     
     printf("\n\nReading food card component......\n");
-    while () //read a food parameter set
+    while () //음식 매개변수 
     {
-        //store the parameter set
+        //매개변수 set 저장 
     }
     fclose(fp);
     printf("Total number of food cards : %i\n", food_nr);
     
     
-    //3. festival card config 
+    //3. 축제 카드 
     if ((fp = fopen(FESTFILEPATH,"r")) == NULL)
     {
         printf("[ERROR] failed to open %s. This file should be in the same directory of SMMarble.exe.\n", FESTFILEPATH);
@@ -135,7 +128,7 @@ int main(int argc, const char * argv[]) {
     
     
     
-    //2. Player configuration ---------------------------------------------------------------------------------
+    //2. 플레이어 구성 ---------------------------------------------------------------------------------
     /*
     do
     {
