@@ -54,7 +54,7 @@ int rolldie(int player)
     return (rand()%MAX_DIE + 1);
 }
 
-
+#if 0
 //action code when a player stays at a node
 void actionNode(int player)
 {
@@ -65,7 +65,7 @@ void actionNode(int player)
             break;
     }
 }
-
+#endif
 
 
 int main(int argc, const char * argv[]) {
@@ -101,7 +101,7 @@ int main(int argc, const char * argv[]) {
     printf("Total number of board nodes : %i\n", board_nr);
     
     
-    
+
     //2. food card config 
     if ((fp = fopen(FOODFILEPATH,"r")) == NULL)
     {
@@ -116,7 +116,6 @@ int main(int argc, const char * argv[]) {
     }
     fclose(fp);
     printf("Total number of food cards : %i\n", food_nr);
-    
     
     
     //3. festival card config 
@@ -166,6 +165,7 @@ int main(int argc, const char * argv[]) {
         //4-5. next turn
         
     }
+
     
     return 0;
 }
