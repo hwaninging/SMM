@@ -4,26 +4,22 @@
 
 #include "smm_common.h"
 
-#define LISTNO_NODE             0
-#define LISTNO_FOODCARD         1
-#define LISTNO_FESTCARD         2
-#define LISTNO_OFFSET_GRADE     3
-
-int smmdb_addTail(int list_nr, void* obj);          //add data to tail
-int smmdb_deleteData(int list_nr, int index);       //delete data
-int smmdb_len(int list_nr);                   //get database length
-void* smmdb_getData(int list_nr, int index);        //get index'th data
-
-//데이터베이스 노드 구조체
 typedef struct smmNode_s {
-        void* data_p; //실제 객체 데이터를 가리키는 포인터 
-        struct smmNode_s* next_p; //다음 노드를 가리키는 포인터 
-} smmNode_t;
+        int index; //노드의 인덱스(순서 빨리 찾기) 
+        void* data_p; // 실제 객체 데이터 포인터 
+        struct smmNode_s* next_p; //다음 노드 포인터 
+        struct smmNode_s* prev_p; //이전 노드 포인터 
+} smmNode_t; 
 
-//함수 원형
+//함수 
 void smmdb_init(void); 
-void smmdb_addTail(int listNo, void* data);
-void* smmdb_getData(int listNo, int index);
-int smmdb_getCount(int listNo);
+
+void smmdb_addTail(int listNo, void* data); //리스트 끝에 데이터 추가
+
+int smmadb_deleteData(int list_nr, int index); //데이터 삭제
+
+void* smmdb_getData(int listNo, int index); //인덱스번째 데이터 반환
+
+int smmdb_getCount(int listNo); //데이터베이스 길이 반환  
 
 #endif

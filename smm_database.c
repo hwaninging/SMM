@@ -1,120 +1,101 @@
 #include "smm_common.h"
 #include "smm_database.h"
 #include <stdlib.h>
-#include  <string.h>
+#include <string.h>
+#include <stdio.h> 
 
-#define LIST_END            -1
-#define MAX_LIST            LISTNO_OFFSET_GRADE+MAX_PLAYER
+#define LIST_END          -1
 
-//node definition for linked list
-typedef struct node{
-    int index;      //index of the node
-    void* obj;      //object data
-    void* next;         //pointer to the next
-    void* prev;         //pointer to the next
-} node_t;
+static smmNode_t* list_database[MAX_LIST]; //리스트 헤드 포인터
+static smmNode_t* listPtr[MAX_LIST]; //캐싱을 위한 포인터
+static int list_cnt[MAX_LIST]; //리스트 개수 카운터
 
-
-static node_t* list_database[MAX_LIST];
-static node_t* listPtr[MAX_LIST];
-static int list_cnt[MAX_LIST];
-
-
-//Inner functions (cannot used at the outside of this file)
-static node_t* genNode(void)
+//내부 함수: 노드 생성
+static smmNode_t* genNode(void)
 {
-    //allocate memory for creating the node
-    node_t* ndPtr = (node_t*)malloc(sizeof(node_t));
-    if (ndPtr != NULL)
-    {
-        ndPtr->next = NULL;
-        ndPtr->obj = NULL;
-        ndPtr->prev = NULL;
-    }
-    
-    return ndPtr;
+       //노드 생성을 위한 메모리 할당
+       smmNode_t* ndPtr = (smmNode_t*)malloc(sizeof(smmNode_t));
+       if (ndPtr != NULL)
+       {
+                 ndptr->next_p = NULL;
+                 ndptr->data_p = NULL; 
+                 ndptr->prev_p = NULL; 
+       }
+       
+       return ndPtr;
 }
 
-static node_t* smmList(int list_nr, int index)
+//내부 함수: 인덱스로 노드 검색
+static smmNode_t* smmList(int list_nr, int index)
 {
-    node_t* ndPtr = list_database[list_nr];
-    if (listPtr[list_nr] != NULL && listPtr[list_nr]->index <= index)
+       smmNode_t* ndPtr = list_database[list_nr];
+       
+       //lsitPtr 활용 검색
+       if (listPtr[list_nr] != NULL && listPtr[list_nr]->index <= index)
+       {
+           ndPtr = listPtr[list_nr];
+       }
+       
+       //잘못된 입력 검사
+       if (index < -1)
+       {
+                 printf("[ERROR] smmList() : 리스트가 NULL이거나 인덱스가 잘못되었습니다. (index : %i)\n", index);
+                 return NULL;
+        }
+       if (index >= list_cnt[list_nr])
     {
-        ndPtr = listPtr[list_nr];
-    }
-    
-    //return for wrong input
-    if (index <-1)
-    {
-        printf("[ERROR] smmList() : either list is null or index is wrong! (offset : %i)\n", index);
+        printf("[ERROR] smmList() : 인덱스가 리스트 길이보다 큽니다. (len:%i, index:%i)\n", list_cnt[list_nr], index);
         return NULL;
     }
-    if (index >= list_cnt[list_nr])
-    {
-        printf("[ERROR] smmList() : index is larger than length (len:%i, index:%i)\n", list_cnt[list_nr], index);
-        return NULL;
-    }
     
-    //repeat travelling until the node is the end or offset becomes 0
+    // 인덱스를 찾을 때까지 다시 
     while (ndPtr != NULL)
     {
         if (ndPtr->index == index)
-            break;
-        ndPtr = ndPtr->next;
+             break;
+        ndPtr = ndPtr->next_p; // 다음 노드 이동
     }
     
     return ndPtr;
 }
 
+// 내부 함수: 인덱스 업데이트 (삭제 시)
 static int updateIndex(int list_nr)
 {
     int index=0;
-    node_t* ndPtr = list_database[list_nr];
+    smmNode_t* ndPtr = list_database[list_nr];
     
-    while ( ndPtr != NULL )//travel until it is the end node
+    while ( ndPtr != NULL ) // 끝 노드까지
     {
         ndPtr->index = index++;
-        ndPtr = ndPtr->next; //travel once
+        ndPtr = ndPtr->next_p; // 다음 노드 이동
     }
     
     return index;
 }
 
 
-
-//API function
-/*
-    description : adding a data object to the list end
-    input parameters : obj - data object to add to the list
-    return value : addition result (0 - succeeded, -1 - failed)
-    
-    operation : 1. make a new node
-                2. find the last node in the list
-                3. make the last node's next pointer to point the new node
-                4. update the index
-*/
+// API 함수: 리스트 끝에 데이터 추가
 int smmdb_addTail(int list_nr, void* obj)
 {
-    node_t* ndPtr;
-    node_t* newNdPtr;
+    smmNode_t* ndPtr;
+    smmNode_t* newNdPtr;
     
-    //parameter checking
     if (obj == NULL)
     {
-        printf("[ERROR] smmdb_addTail() : Failed to do addTail : input object indicates NULL!\n");
+        printf("[ERROR] smmdb_addTail() : addTail 실패 : 입력 객체 포인터가 NULL입니다.\n");
         return -1;
     }
     
-    //generate new node
     newNdPtr = genNode();
     if (newNdPtr == NULL)
     {
-        printf("[ERROR] smmdb_addTail() : Failed to do addTail : Failed to create a node\n");
-        return -1; //indicate to the upper function that node addition is failed
+        printf("[ERROR] smmdb_addTail() : addTail 실패 : 노드 생성에 실패했습니다.\n");
+        return -1; 
     }
-    newNdPtr->obj = obj;
+    newNdPtr->data_p = obj; // 객체 데이터 포인터 저장
     
-    //add node to the list tail
+    // 리스트 마지막에 노드 추가
     if (list_database[list_nr] == NULL)
     {
         list_database[list_nr] = newNdPtr;
@@ -123,12 +104,13 @@ int smmdb_addTail(int list_nr, void* obj)
     else
     {
         ndPtr = smmList(list_nr, list_cnt[list_nr]-1);
-        ndPtr->next = newNdPtr;
-        newNdPtr->prev = ndPtr;
+        
+        ndPtr->next_p = newNdPtr;
+        newNdPtr->prev_p = ndPtr; // 이중 연결 리스트
         newNdPtr->index = ndPtr->index+1;
     }
     
-    listPtr[list_nr] = newNdPtr;
+    listPtr[list_nr] = newNdPtr; // 캐싱 포인터 업데이트
     
     list_cnt[list_nr]++;
     
@@ -136,37 +118,40 @@ int smmdb_addTail(int list_nr, void* obj)
 }
 
 
-/*
-    description : delete data object from the list
-    input parameters : index - index'th data to delete
-    return value : deletion result (0 - succeeded, -1 - failed)
-*/
+// API 함수: 인덱스로 데이터 삭제
 int smmdb_deleteData(int list_nr, int index)
 {
-    node_t* ndPrevPtr;
-    node_t* ndNextPtr;
-    node_t* delNdPtr;
+    smmNode_t* ndPrevPtr;
+    smmNode_t* ndNextPtr;
+    smmNode_t* delNdPtr;
     
-    //parameter checking
+    // 삭제할 노드 검색
     if ( (delNdPtr = smmList(list_nr, index)) == NULL)
     {
-        printf("[ERROR] smmdb_deleteData() : Failed to do deleteData : input index is invalid (%i)!\n", index);
+        printf("[ERROR] smmdb_deleteData() : deleteData 실패: 입력된 인덱스가 유호하지 않습니다.  (%i)!\n", index);
         return -1;
     }
     
-    ndPrevPtr = delNdPtr->prev;
+    ndPrevPtr = delNdPtr->prev_p;
     if (ndPrevPtr != NULL)
     {
-        ndPrevPtr->next = delNdPtr->next;
+        // 이전 노드의 next를 다음 노드에 연결
+        ndPrevPtr->next_p = delNdPtr->next_p;
+    } else {
+        // Head 노드를 삭제하는 경우, Head 업데이트
+        list_database[list_nr] = delNdPtr->next_p;
     }
-    ndNextPtr = delNdPtr->next;
+
+    ndNextPtr = delNdPtr->next_p;
     if (ndNextPtr != NULL)
     {
-        ndNextPtr->prev = delNdPtr->prev;
+        // 다음 노드의 prev를 이전 노드에 연결
+        ndNextPtr->prev_p = delNdPtr->prev_p;
     }
     
-    free(delNdPtr->obj);
-    free(delNdPtr);
+    // 동적 메모리 해제
+    free(delNdPtr->data_p); // 객체 데이터 메모리 해제
+    free(delNdPtr);         // 노드 자체 메모리 해제
     
     list_cnt[list_nr]--;
     
@@ -176,44 +161,46 @@ int smmdb_deleteData(int list_nr, int index)
     }
     else
     {
-        updateIndex(list_nr);
+        updateIndex(list_nr); // 인덱스 재정렬
     }
     
     return 0;
 }
 
 
-//functions for list observation -----------------------------
-
-/*
-    description : return the number of data objects in the list
-    return value : length
-*/
-int smmdb_len(int list_nr)
+// API 함수: 리스트 길이 반환
+int smmdb_getCount(int list_nr)
 {
     return list_cnt[list_nr];
 }
 
 
-/*
-    description : get the object data
-    input parameters : index
-    return value : object pointer
-*/
+// API 함수: 인덱스로 데이터 객체 반환
 void* smmdb_getData(int list_nr, int index)
 {
     void* obj = NULL;
-    node_t* ndPtr;
+    smmNode_t* ndPtr;
     
-    //parameter checking
+    // 노드 검색
     if ((ndPtr = smmList(list_nr, index)) != NULL)
     {
-        obj = (void*)ndPtr->obj;
-        listPtr[list_nr] = ndPtr;
+        obj = (void*)ndPtr->data_p;
+        listPtr[list_nr] = ndPtr; // 캐싱 포인터 업데이트
     }
     
     if (obj == NULL)
         printf("[ERROR] smmdb_getData() : there is no data of index %i\n", index);
     
     return obj;
+}
+
+// API 함수: 데이터베이스 초기화
+void smmdb_init(void)
+{
+    for (int i = 0; i < MAX_LIST; i++)
+    {
+        list_database[i] = NULL;
+        listPtr[i] = NULL;
+        list_cnt[i] = 0;
+    }
 }
