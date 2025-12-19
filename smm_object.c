@@ -1,134 +1,97 @@
-
 #include "smm_common.h"
 #include "smm_object.h"
-#include "smm_database.h"
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <stdlib.h> 
+#include <stdio.h> 
 
-//플레이어 객체 저장소
-static smmPlayer_t* smm_players[MAX_PLAYER];
-static int player_nr_local = 0;
+// 전역 변수: 플레이어 객체 배열
+static smmPlayer_t* players[MAX_PLAYER];
+static int playerCount = 0;
 
-
-//2. 객체 생성-----------------------------------------------------------
-//2-1. 보드 노드 
-void* smmObj_genNode(char* name, int type, int credit, int energy) {
-      smmNode_t* newNode = (smmNode_t*)malloc(sizeof(smmNode_t));
-      if (newNode == NULL) return NULL;
-      
-      strncpy(newNode->name, name, MAX_CHARNAME - 1);
-      newNode->name[MAX_CHARNAME - 1] = '\0';
-      
-      newNode->type = (smmNode_e)type;
-      newNode->credit = credit;
-      newNode->energy = energy;
-      
-      return (void*)newNode; }
-
-//2-2. 음식 카드  
-void* smmObj_genFood(char* name, int energy) {
-      smmFood_t* newFood = (smmFood_t*)malloc(sizeof(smmFood_t));
-      if (newFood == NULL) return NULL;
-      
-      strncpy(newFood->name, name, MAX_CHARNAME - 1);
-      newFood->name[MAX_CHARNAME - 1] = '\0';
-      newFood->energy = energy;
-      
-      return (void*)newFood; }
-//2-3. 축제 카드 
-void* smmObj_genFest(char* name) {
-      smmFest_t* newFest = (smmFest_t*)malloc(sizeof(smmFest_t));
-      if (newFest == NULL) return NULL;
-      
-      strncpy(newFest->name, name, MAX_CHARNAME - 1);
-      newFest->name[MAX_CHARNAME - 1] = '\0';
-      
-      return (void*)newFest; }
-//2-4. 플레이어 객체 생성 및 초기화 
-void generatePlayers(int n, int initEnergy) {
-     char pName[MAX_CHARNAME];
-     player_nr_local = 0;
-     
-     if (n > MAX_PLAYER || n <= 0) return;
-     
-     printf("\n--- Player Configuration ---\n");
-     for (int i=0;i<n;i++) {
-         printf("Enter name for Player %i: ", i+1);
-         if (scanf("%s", pName) != 1)
-         {
-             sprintf(pName, "P%i", i+1);
-         }
-         while (getchar() != '\n' && !feof(stdin) && !ferror(stdin));
-         
-         smmPlayer_t* newPlayer = (smmPlayer_t*)malloc(sizeof(smmPlayer_t));
-         if (newPlayer == NULL) break;
-         
-         //객체 멤버 초기화
-         strncpy(newPlayer->name, pName, MAX_CHARNAME - 1);
-         newPlayer->name[MAX_CHARNAME - 1] = '\0';
-         newPlayer->currentPos = 0;
-         newPlayer->energy = initEnergy;
-         newPlayer->totalCredit = 0;
-         newPlayer->gradeList_nr = LISTNO_OFFSET_GRADE + i;
-         newPlayer->penalizeTurn = 0;
-         
-         smm_players[i] = newPlayer;
-         player_nr_local++;
-         
-         printf("Player %s created with %i energy.\n", newPlayer->name, newPlayer->energy);
-         }
-     }
-
-//3. 객체 접근 및 상태 관리 ---------------------------------------
-//3-1-1. 플레이어 접근 함수
-int smmObj_getPlayerCount(void)
-{
-    return player_nr_local;
-}
-//3-1-2. 플레이어 객체 접근 함수 
-smmPlayer_t* smmObj_getPlayer(int playerIndex) {
-             if (playerIndex >= 0 && playerIndex < player_nr_local)
-             {
-                 return smm_players[playerIndex];
-             }
-             return NULL;
-}
-//3-2. 플레이어 상태 출력 
-void printPlayerStatus(void) {
-    int playerCount = smmObj_getPlayerCount();
-    smmPlayer_t* pPlayer;
-    
-    printf("\n==================================\n");
-    printf("        CURRENT PLAYER STATUS       \n");
-    printf("====================================\n");
-    
-    printf("%-10s | %-6s | %-6s | %-8s \n", "NAME", "ENERGY", "CREDIT", "POSITION");
-    printf("------------------------------------\n");
-    
-    for (int i=0;i<playerCount;i++) {
-        pPlayer = smmObj_getPlayer(i);
-        
-        if (pPlayer != NULL) {
-                    printf("%-10s | %-6i | %-6i | %-8i\n", pPlayer->name, pPlayer->energy, pPlayer->totalCredit, pPlayer->currentPos);
-                    }
+void* smmObj_genNode(const char* name, int type, int credit, int energy) {
+    smmNode_t* newNode = (smmNode_t*)malloc(sizeof(smmNode_t));
+    if (newNode != NULL) {
+        strncpy(newNode->name, name, MAX_CHARNAME - 1);
+        newNode->name[MAX_CHARNAME - 1] = '\0';
+        newNode->type = type;
+        newNode->credit = credit;
+        newNode->energy = energy;
     }
-    printf("===================================\n");
+    return (void*)newNode;
 }
-    
-//3-3. 졸업 여부 확인 (게임 종료 조건) 
+
+void* smmObj_genFood(const char* name, int energy) {
+    smmFood_t* newFood = (smmFood_t*)malloc(sizeof(smmFood_t));
+    if (newFood != NULL) {
+        strncpy(newFood->name, name, MAX_CHARNAME - 1);
+        newFood->name[MAX_CHARNAME - 1] = '\0';
+        newFood->energy = energy;
+    }
+    return (void*)newFood;
+}
+
+void* smmObj_genFest(const char* name) {
+    smmFest_t* newFest = (smmFest_t*)malloc(sizeof(smmFest_t));
+    if (newFest != NULL) {
+        strncpy(newFest->name, name, MAX_CHARNAME - 1);
+        newFest->name[MAX_CHARNAME - 1] = '\0';
+    }
+    return (void*)newFest;
+}
+
+void* smmObj_genGrade(const char* lectureName, int credit, int grade) {
+    smmGrade_t* newGrade = (smmGrade_t*)malloc(sizeof(smmGrade_t));
+    if (newGrade != NULL) {
+        strncpy(newGrade->lectureName, lectureName, MAX_CHARNAME - 1);
+        newGrade->lectureName[MAX_CHARNAME - 1] = '\0';
+        newGrade->credit = credit;
+        newGrade->grade = grade;
+    }
+    return (void*)newGrade;
+}
+
+int generatePlayers(int num, int initEnergy) {
+    int i; 
+    playerCount = 0;
+
+    for (i = 0; i < num; i++) {
+        players[i] = (smmPlayer_t*)malloc(sizeof(smmPlayer_t));
+        if (players[i] != NULL) {
+            printf("%d 번째 플레이어 이름을 입력하세요: ", i + 1);
+            scanf("%s", players[i]->name);
+            players[i]->energy = initEnergy;
+            players[i]->currentPos = 0; 
+            players[i]->totalCredit = 0;
+            players[i]->penalizeTurn = 0; 
+            playerCount++;
+        }
+    }
+    return 0;
+}
+
+smmPlayer_t* smmObj_getPlayer(int index) {
+    if (index >= 0 && index < playerCount) return players[index];
+    return NULL;
+}
+
+int smmObj_getPlayerCount(void) {
+    return playerCount;
+}
+
 int isGraduated(int playerIndex) {
-    smmPlayer_t* pPlayer = smmObj_getPlayer(playerIndex);
-    
-    if (pPlayer == NULL) return 0;
-    
-    //총 학점이 30 이상이면 졸업
-    if (pPlayer->totalCredit >= GRADUATE_CREDIT)
-    {
-        return 1;
+    if (players[playerIndex] == NULL) return 0;
+    return (players[playerIndex]->totalCredit >= GRADUATE_CREDIT);
+}
+
+void printPlayerStatus(void) {
+    int i;
+    printf("\n--- 현재 플레이어 상태 ---\n");
+    for (i = 0; i < playerCount; i++) {
+        smmPlayer_t* p = players[i];
+        if (p != NULL) {
+            printf("[#%d %s] 위치: %d, 에너지: %d, 학점: %d\n", 
+                   i + 1, p->name, p->currentPos, p->energy, p->totalCredit);
+        }
     }
-    else
-    {
-        return 0;
-    }
+    printf("-------------------------\n");
 }
